@@ -66,6 +66,15 @@ def stop_mixer():
 def get_mixer_status():
     return system_state
 
+@router.get("/health")
+def health():
+    mqtt_connected = mqtt_client.is_connected()
+    return {
+        "api": "ok",
+        "mqtt": "connected" if mqtt_connected else "disconnected",
+        "system": system_state,
+    }
+
 # --- RECIPES ---
 @router.get("/recipes", response_model=list[schemas.Recipe])
 def get_recipes(db: Session = Depends(get_db)):

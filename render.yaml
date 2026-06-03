@@ -12,13 +12,14 @@
 
 services:
   # ---------------------------------------------------------------------------
-  # BACKEND — FastAPI (Docker)
+  # BACKEND — FastAPI (Python nativo)
   # ---------------------------------------------------------------------------
   - type: web
     name: sima-backend
-    env: docker
-    dockerfilePath: ./backend/Dockerfile
-    dockerContext: ./backend
+    env: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     plan: free
 
     envVars:

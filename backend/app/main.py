@@ -36,11 +36,15 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="SIMA Backend API", lifespan=lifespan)
 
 # Configuração de CORS
-origins = settings.ALLOWED_ORIGINS.split(",")
+# ALLOWED_ORIGINS pode conter origens explícitas separadas por vírgula
+# ou o valor especial "*" para aceitar qualquer origem (útil em dev/staging).
+origins = [o.strip() for o in settings.ALLOWED_ORIGINS.split(",")]
+allow_all = origins == ["*"]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
+    allow_origins=["*"] if allow_all else origins,
+    allow_origin_regex=r"https://.*\.onrender\.com" if not allow_all else None,
+    allow_credentials=not allow_all,
     allow_methods=["*"],
     allow_headers=["*"],
 )

@@ -15,6 +15,10 @@ env/
 # Variáveis sensíveis
 .env
 
+# Banco de dados local
+*.db
+*.sqlite
+
 # IDE
 .idea/
 .vscode/

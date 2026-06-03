@@ -114,7 +114,8 @@ ProcessState currentState = IDLE;
 // Temporizadores
 unsigned long stepStartTime = 0;     // Tempo em que o passo atual começou
 unsigned long lastHeartbeat = 0;     // Último envio de status/heartbeat
-unsigned long lastReconnectAttempt = 0; 
+unsigned long lastReconnectAttempt = 0;
+unsigned long mqttConnectedAt     = 0; // Registra quando conectou; usado para ignorar mensagens retidas do broker
 
 // Rampa suave do motor
 uint8_t       motorCurrentDuty = 0;
@@ -357,7 +358,15 @@ void onMqttMessage(char* topic, byte* payload, unsigned int length) {
 
   Serial.printf("[MQTT] Tópico: %s | Payload: %s\n", topic, msgStr.c_str());
 
+  // Descarta mensagens retidas entregues pelo broker logo após conexão.
+  // Janela de 3 s é suficiente para cobrir a entrega de qualquer retained.
+  // stop sempre passa — é comando de segurança.
+  bool isRetainedWindow = (millis() - mqttConnectedAt < 3000);
+  if (isRetainedWindow && topicStr != "mixer/command/stop") return;
+
   if (topicStr == "mixer/command/start") {
+    // Rejeita payload vazio (ex: mensagem retida de limpeza)
+    if (msgStr.length() == 0) return;
     // Não inicia caso já esteja rodando uma tarefa
     if (currentState != IDLE && currentState != STOPPED && currentState != ERROR_STATE) {
       publishEvent("Ignorado: Um processo ja esta em andamento.");
@@ -451,6 +460,8 @@ void connectMQTT() {
   if (client.connect(mqtt_client_id.c_str(), MQTT_USER, MQTT_PASS, "mixer/status", 0, true, "{\"status\":\"offline\"}")) {
     Serial.println(" Conectado!");
     
+    mqttConnectedAt = millis();
+
     client.subscribe("mixer/command/start");
     client.subscribe("mixer/command/stop");
     client.subscribe("mixer/command/status");
